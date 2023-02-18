@@ -1,0 +1,1 @@
+python quickStarter.py spam.txt
