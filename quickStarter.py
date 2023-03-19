@@ -16,12 +16,15 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 class QuickStart:
-    
+
+    """
+       Initialize all the global variables
+    """
     def __init__(self):
         self.SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
         self.GLOBAL_SPAM_LIST = []
         self.GLOBAL_CACHE = []
-        self.MAXIMUM_MESSAGES_TO_BE_LOADED = 20
+        self.MAXIMUM_MESSAGES_TO_BE_LOADED = 500
         self.userId = 'me'
         self.significat_digits = '.2f'
         self.id_str = 'id'
@@ -192,13 +195,19 @@ class QuickStart:
                 pickle.dump(creds, token)
         print("=======VERIFIED=====================")
         return creds
-        
+    
+    """
+        Save loaded messages in a cached-messages.txt file
+    """
     def save_loaded_messages(self, a_list):
         text_file = open("cached-mesages.txt", "w")
         for k in a_list:
             text_file.write("{}\n".format(k['id']))
         text_file.close()
-        
+       
+    """
+        Save skipped emails in a skipped-emails.txt file
+    """
     def save_skipped_emails(self, a_list):
         text_file = open("skipped-emails.txt", "w")
         n = text_file.write(str("\n".join(sorted(set(a_list)))))
