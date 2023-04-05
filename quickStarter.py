@@ -25,7 +25,7 @@ class QuickStart:
         self.SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
         self.GLOBAL_SPAM_LIST = []
         self.GLOBAL_CACHE = []
-        self.MAXIMUM_MESSAGES_TO_BE_LOADED = 50
+        self.MAXIMUM_MESSAGES_TO_BE_LOADED = 100
         self.userId = 'me'
         self.significat_digits = '.2f'
         self.id_str = 'id'
@@ -96,7 +96,7 @@ class QuickStart:
         return message['id'] not in self.GLOBAL_CACHE
 
     def common_patterns(self, message):
-        return "quora" in message or "alerts" in message or "codeforces" in message or "medium" in message
+        return any(token in message for token in ["quora", "alerts", "codeforces", "medium"])
 
     def process_messages(self, messages):
         if messages:
