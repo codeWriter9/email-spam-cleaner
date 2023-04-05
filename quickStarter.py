@@ -15,63 +15,63 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
-class QuickStart:
 
+class QuickStart:
     """
        Initialize all the global variables
     """
+
     def __init__(self):
         self.SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
         self.GLOBAL_SPAM_LIST = []
         self.GLOBAL_CACHE = []
-        self.MAXIMUM_MESSAGES_TO_BE_LOADED = 500
+        self.MAXIMUM_MESSAGES_TO_BE_LOADED = 50
         self.userId = 'me'
         self.significat_digits = '.2f'
         self.id_str = 'id'
         self.payload = 'payload'
         self.headers = 'headers'
         self.labelIds = 'labelIds'
-        self.value = 'value'        
+        self.value = 'value'
         self.skipped_emails = []
         self.total_msgs_trashed = []
         self.total_msgs_skipped = []
-        
-        
+
     def self_check(self):
         print("Hello World!")
-        
+
     def run(self):
         arguments_tuple = self.load_arguments()
         self.start = time.time()
         print("=======Connecting==To===Server=====")
         self.service = build('gmail', 'v1', credentials=self.creds())
-        
-        #Call GMail API
+
+        # Call GMail API
         results = self.list_messages()
         messages = results.get('messages', [])
         self.save_loaded_messages(messages)
         fetch_time_taken = time.time() - self.start
         print("\n Message Ids Fetched (seconds): " + format(fetch_time_taken, self.significat_digits))
-        
+
         # process
         self.process_messages(messages)
-        # save 
-        self.save_skipped_emails(self.skipped_emails)
+        # save
+        print("===========Skipped==Emails===")
+        print(self.skipped_emails)
+        self.save_skipped_emails()
+        print("===========Written===========")
         # print stats
         self.print_stats();
-        
-        
-    
-    def print_stats(self):    
+
+    def print_stats(self):
         print("\n Total Messages Trashed: " + str(len(self.total_msgs_trashed)))
-        print("\n Total Messages Skipped: " + str(len(self.total_msgs_skipped)))        
+        print("\n Total Messages Skipped: " + str(len(self.skipped_emails)))
         time_taken = time.time() - self.start
-        print("\n Time Taken (seconds): " + format(time_taken, self.significat_digits)) 
+        print("\n Time Taken (seconds): " + format(time_taken, self.significat_digits))
         print("\n\n\n")
         print("=======Program==Will===Exit=====")
         print("=======Bye======================")
-        
-        
+
     def extract_email(self, raw_email):
         email_list = raw_email.split(' ')
         return re.sub('[^a-zA-Z0-9-_*.@_]', '', email_list[len(email_list) - 1])
@@ -80,63 +80,62 @@ class QuickStart:
         return header['name'] == 'From'
 
     def to_be_trashed(self, labels):
-        return 'IMPORTANT' not in labels and 'SENT' not in labels    
-        
+        return 'IMPORTANT' not in labels and 'SENT' not in labels
+
     def list_messages(self):
-        return self.service.users().messages().list(userId=self.userId, maxResults=self.MAXIMUM_MESSAGES_TO_BE_LOADED).execute()
-        
+        return self.service.users().messages().list(userId=self.userId,
+                                                    maxResults=self.MAXIMUM_MESSAGES_TO_BE_LOADED).execute()
+
     def get_message(self, message):
         return self.service.users().messages().get(userId=self.userId, id=message[self.id_str]).execute()
 
     def trash_message(self, message):
-        return self.service.users().messages().trash(userId=self.userId, id=message[self.id_str]).execute()        
-        
+        return self.service.users().messages().trash(userId=self.userId, id=message[self.id_str]).execute()
+
     def not_in_cache(self, message):
         return message['id'] not in self.GLOBAL_CACHE
-        
+
+    def common_patterns(self, message):
+        return "quora" in message or "alerts" in message or "codeforces" in message or "medium" in message
+
     def process_messages(self, messages):
         if messages:
             for message in messages:
                 if self.not_in_cache(message):
-                    try:                        
+                    try:
                         msg_body = self.get_message(message)
-                        headers, labels = msg_body[self.payload][self.headers], msg_body[self.labelIds]                        
+                        headers, labels = msg_body[self.payload][self.headers], msg_body[self.labelIds]
                         self.process_headers(message, headers, labels)
                     except  Exception as exception:
                         print(type(exception))
                         continue
-                    
 
-        
-    def process_headers(self, message, headers, labels):        
-        for header in headers:            
+    def process_headers(self, message, headers, labels):
+        for header in headers:
             if self.is_from(header) and self.to_be_trashed(labels):
                 email = self.extract_email(header['value'])
-                if email in self.GLOBAL_SPAM_LIST:
+                if email in self.GLOBAL_SPAM_LIST or self.common_patterns(email):
                     print("Trashing Message: " + str(message['id']) + " :from: " + str(email))
                     try:
                         trash_response = self.trash_message(message)
                         print("Trashed: " + str(message['id']) + " :Response: " + str(trash_response))
-                        self.total_msgs_trashed.append("Trashed: " + str(message['id']) + " :Response: " + str(trash_response))
+                        self.total_msgs_trashed.append(
+                            "Trashed: " + str(message['id']) + " :Response: " + str(trash_response))
                     except Exception as exception:
                         print(type(exception))
                         continue
                 else:
                     try:
                         print("\tSkipping Message:" + " :from: " + str(email))
-                        print("\t" + str(msg_body['labelIds']) + ":" + str(msg_body['snippet']))
-                        self.total_msgs_skipped.append(" :from: " + str(email) + "\t" + str(msg_body['labelIds']) + ":" + str(msg_body['snippet']))
                         self.skipped_emails.append(str(email))
                     except Exception as exception:
                         print(type(exception))
+                        self.skipped_emails.append(str(email))
                         continue
-                                
-                            
-                            
-                            
-    
+
     """ load arguments from command line
-    """        
+    """
+
     def load_arguments(self):
         print("=======loading==arguments=====")
         res = []
@@ -149,7 +148,7 @@ class QuickStart:
             with open(args.spam_email_list, 'r') as spam_list_file:
                 for line in spam_list_file:
                     res.append(line)
-        print("=======loaded====SPAM=LIST=====")    
+        print("=======loaded====SPAM=LIST=====")
         res = sorted(res)
         for email in res:
             self.GLOBAL_SPAM_LIST.append(email.replace("\n", ""))
@@ -171,18 +170,18 @@ class QuickStart:
         print(self.GLOBAL_CACHE)
         print("=======loaded====cache=LIST=====")
         return ()
-        
-        
+
     """ The file token.pickle stores the user's access and refresh tokens, and is
     created automatically when the authorization flow completes for the first
-    time."""    
+    time."""
+
     def creds(self):
         print("=======Verifying====Credentials=====")
-        creds = None        
+        creds = None
         if os.path.exists('token.pickle'):
             with open('token.pickle', 'rb') as token:
-                creds = pickle.load(token)    
-        # If there are no (valid) credentials available, let the user log in.
+                creds = pickle.load(token)
+                # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
@@ -195,25 +194,25 @@ class QuickStart:
                 pickle.dump(creds, token)
         print("=======VERIFIED=====================")
         return creds
-    
+
     """
         Save loaded messages in a cached-messages.txt file
     """
+
     def save_loaded_messages(self, a_list):
         text_file = open("cached-mesages.txt", "w")
         for k in a_list:
             text_file.write("{}\n".format(k['id']))
         text_file.close()
-       
+
     """
         Save skipped emails in a skipped-emails.txt file
     """
-    def save_skipped_emails(self, a_list):
+
+    def save_skipped_emails(self):
         text_file = open("skipped-emails.txt", "w")
-        n = text_file.write(str("\n".join(sorted(set(a_list)))))
+        n = text_file.write(str("\n".join(sorted(set(self.skipped_emails)))))
         text_file.close()
-
-
 
 
 if __name__ == '__main__':
