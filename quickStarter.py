@@ -1,8 +1,9 @@
-"""Shows basic usage of the Gmail API.
-Pulls The list of N emails
-For each email checks against a list of spam email addresses
-If Spam then deletes
-else skips
+"""
+    Shows basic usage of the Gmail API.
+    Pulls The list of N emails
+    For each email checks against a list of spam email addresses
+    If Spam then deletes
+    else skips
 """
 from __future__ import print_function
 import argparse
@@ -25,7 +26,7 @@ class QuickStart:
         self.SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
         self.GLOBAL_SPAM_LIST = []
         self.GLOBAL_CACHE = []
-        self.MAXIMUM_MESSAGES_TO_BE_LOADED = 100
+        self.MAXIMUM_MESSAGES_TO_BE_LOADED = 500
         self.userId = 'me'
         self.significat_digits = '.2f'
         self.id_str = 'id'
@@ -40,6 +41,13 @@ class QuickStart:
     def self_check(self):
         print("Hello World!")
 
+    """
+         Loads the arguments
+         loads the credentials from file system 
+         calls the gmail api with the credentials
+         calls process messages
+         calls the print the stats
+    """
     def run(self):
         arguments_tuple = self.load_arguments()
         self.start = time.time()
@@ -63,6 +71,12 @@ class QuickStart:
         # print stats
         self.print_stats();
 
+
+    """
+        Print the total messages trashed
+        Print the skipped messages 
+        Print time taken precise to significant digits defined in global
+    """
     def print_stats(self):
         print("\n Total Messages Trashed: " + str(len(self.total_msgs_trashed)))
         print("\n Total Messages Skipped: " + str(len(self.skipped_emails)))
@@ -98,6 +112,12 @@ class QuickStart:
     def common_patterns(self, message):
         return any(token in message for token in ["quora", "alerts", "codeforces", "medium"])
 
+
+    """
+         if the current list of messages is NOT null
+            then for all messages check if they are NOT already checked in an earlier run
+                process headers for all messages
+    """
     def process_messages(self, messages):
         if messages:
             for message in messages:
@@ -110,6 +130,14 @@ class QuickStart:
                         print(type(exception))
                         continue
 
+    """
+        for each header in headers
+            if check from header and can be trashed
+                if check in global spam list and in common patterns
+                    trash the message
+                else
+                    skip and add to skip list
+    """
     def process_headers(self, message, headers, labels):
         for header in headers:
             if self.is_from(header) and self.to_be_trashed(labels):
@@ -133,7 +161,8 @@ class QuickStart:
                         self.skipped_emails.append(str(email))
                         continue
 
-    """ load arguments from command line
+    """
+         load arguments from command line
     """
 
     def load_arguments(self):
@@ -171,9 +200,11 @@ class QuickStart:
         print("=======loaded====cache=LIST=====")
         return ()
 
-    """ The file token.pickle stores the user's access and refresh tokens, and is
-    created automatically when the authorization flow completes for the first
-    time."""
+    """ 
+        The file token.pickle stores the user's access and refresh tokens, and is
+        created automatically when the authorization flow completes for the first
+        time.
+    """
 
     def creds(self):
         print("=======Verifying====Credentials=====")
