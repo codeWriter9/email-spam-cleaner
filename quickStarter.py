@@ -110,7 +110,7 @@ class QuickStart:
         return message['id'] not in self.GLOBAL_CACHE
 
     def common_patterns(self, message):
-        return any(token in message for token in ["quora", "alerts", "codeforces", "medium"])
+        return any(token in message for token in ["quora","alerts","codeforces","medium","hoichoi","marvel"])
 
 
     """
